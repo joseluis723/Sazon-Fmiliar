@@ -1,0 +1,146 @@
+// Esquema de base de datos - Sistema de pedidos por QR
+// Por defecto usa SQLite para que el proyecto arranque sin instalar nada mas.
+// Para produccion, cambia el provider a "postgresql" y ajusta DATABASE_URL (ver .env.example).
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  COCINA
+  MESERO
+}
+
+enum OrderStatus {
+  NUEVO
+  CONFIRMADO
+  EN_PREPARACION
+  LISTO
+  ENTREGADO
+  CANCELADO
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  EN_ESTABLECIMIENTO
+  ONLINE
+}
+
+enum PaymentStatus {
+  PENDIENTE
+  PAGADO
+  ANULADO
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  orderStatusChanges OrderStatusHistory[]
+}
+
+model Table {
+  id        String   @id @default(cuid())
+  number    Int      @unique
+  name      String? // ej. "Terraza 2", opcional ademas del numero
+  active    Boolean  @default(true)
+  qrToken   String   @unique @default(cuid()) // token opaco incluido en la URL del QR
+  createdAt DateTime @default(now())
+
+  orders Order[]
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  order     Int       @default(0)
+  active    Boolean   @default(true)
+  products  Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  imageUrl    String?
+  available   Boolean  @default(true)
+  featured    Boolean  @default(false)
+  order       Int      @default(0)
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime @default(now())
+
+  orderItems OrderItem[]
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String?
+  phone     String?
+  createdAt DateTime @default(now())
+
+  orders Order[]
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  number       Int         @unique @default(autoincrement())
+  tableId      String
+  table        Table       @relation(fields: [tableId], references: [id])
+  customerId   String?
+  customer     Customer?   @relation(fields: [customerId], references: [id])
+  status       OrderStatus @default(NUEVO)
+  notes        String?
+  subtotal     Float
+  discount     Float       @default(0)
+  total        Float
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+  payment       Payment?
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+  quantity   Int
+  unitPrice  Float // precio congelado al momento del pedido
+  notes      String? // ej. "sin cebolla"
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  changedBy String?
+  user      User?       @relation(fields: [changedBy], references: [id])
+  createdAt DateTime    @default(now())
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  orderId   String        @unique
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method    PaymentMethod
+  status    PaymentStatus @default(PENDIENTE)
+  amount    Float
+  createdAt DateTime      @default(now())
+}

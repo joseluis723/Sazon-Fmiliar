@@ -1,0 +1,35 @@
+{
+  "name": "restaurant-qr",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node server.js",
+    "build": "next build",
+    "start": "cross-env NODE_ENV=production node server.js",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "prisma:seed": "node prisma/seed.js",
+    "prisma:studio": "prisma studio",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "@prisma/client": "5.18.0",
+    "prisma": "5.18.0",
+    "socket.io": "4.7.5",
+    "socket.io-client": "4.7.5",
+    "bcryptjs": "2.4.3",
+    "jsonwebtoken": "9.0.2",
+    "qrcode": "1.5.3",
+    "pdfkit": "0.15.0",
+    "zod": "3.23.8",
+    "cross-env": "7.0.3",
+    "date-fns": "3.6.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "10.4.19",
+    "postcss": "8.4.40",
+    "tailwindcss": "3.4.7"
+  }
+}
