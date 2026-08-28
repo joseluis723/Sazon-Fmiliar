@@ -94,7 +94,7 @@ model Customer {
   orders Order[]
 }
 
-model Order {
+
  model Order {
   id           String      @id @default(cuid())
   number       Int         @unique
