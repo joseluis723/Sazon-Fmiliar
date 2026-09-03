@@ -137,12 +137,4 @@ model OrderStatusHistory {
   createdAt DateTime    @default(now())
 }
 
-model Payment {
-  id        String        @id @default(cuid())
-  orderId   String        @unique
-  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  method    PaymentMethod
-  status    PaymentStatus @default(PENDIENTE)
-  amount    Float
-  createdAt DateTime      @default(now())
-}
+
