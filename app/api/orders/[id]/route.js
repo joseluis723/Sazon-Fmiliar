@@ -7,7 +7,7 @@ export async function GET(request, { params }) {
       table: true,
       items: { include: { product: true } },
       statusHistory: { orderBy: { createdAt: "asc" } },
-     
+      payment: true,
     },
   });
   if (!order) {
