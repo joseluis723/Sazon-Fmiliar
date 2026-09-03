@@ -5,6 +5,7 @@ const { emitOrderEvent } = require("../../../lib/socket");
 const orderInclude = {
   table: true,
   items: { include: { product: true } },
+  payment: true,
 };
 
 // POST /api/orders - el cliente confirma su pedido desde /menu?mesa=X
