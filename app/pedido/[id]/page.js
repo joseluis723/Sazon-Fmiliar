@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import StatusBadge from "../../../components/StatusBadge";
 
@@ -12,20 +12,10 @@ const STEPS = [
   { key: "ENTREGADO", label: "Entregado" },
 ];
 
-// Sonido corto de aviso (no requiere archivos externos)
-const CHIME_SRC =
-  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
-
 export default function OrderStatusPage({ params }) {
   const { id } = params;
   const [order, setOrder] = useState(null);
   const [error, setError] = useState(null);
-  const [showReadyBanner, setShowReadyBanner] = useState(false);
-  const [notifPermission, setNotifPermission] = useState(
-    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported"
-  );
-  const audioRef = useRef(null);
-  const prevStatusRef = useRef(null);
 
   useEffect(() => {
     fetch(`/api/orders/${id}`)
@@ -34,10 +24,7 @@ export default function OrderStatusPage({ params }) {
         if (!res.ok) throw new Error(data.error || "Pedido no encontrado");
         return data;
       })
-      .then((data) => {
-        setOrder(data.order);
-        prevStatusRef.current = data.order.status;
-      })
+      .then((data) => setOrder(data.order))
       .catch((err) => setError(err.message));
   }, [id]);
 
@@ -46,29 +33,13 @@ export default function OrderStatusPage({ params }) {
     const socket = io({ path: "/api/socket" });
     socket.emit("join:mesa", order.tableId);
     socket.on("order:status", (updated) => {
-      if (updated.id !== order.id) return;
-      const becameReady = prevStatusRef.current !== "LISTO" && updated.status === "LISTO";
-      prevStatusRef.current = updated.status;
-      setOrder((prev) => ({ ...prev, status: updated.status }));
-
-      if (becameReady) {
-        setShowReadyBanner(true);
-        audioRef.current?.play().catch(() => {});
-        if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-          new Notification("Tu pedido esta listo", {
-            body: `El pedido #${order.number} ya esta listo para entregar.`,
-          });
-        }
+      if (updated.id === order.id) {
+        setOrder((prev) => ({ ...prev, status: updated.status }));
       }
     });
     return () => socket.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order?.id]);
-
-  function requestNotifications() {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    Notification.requestPermission().then((perm) => setNotifPermission(perm));
-  }
 
   if (error) {
     return (
@@ -91,36 +62,14 @@ export default function OrderStatusPage({ params }) {
 
   return (
     <main className="min-h-screen px-4 py-8">
-      <audio ref={audioRef} src={CHIME_SRC} />
-
-      {showReadyBanner && (
-        <div className="fixed inset-x-4 top-4 z-50 flex items-center justify-between gap-3 rounded-xl bg-herb px-4 py-3 text-paper shadow-lg">
-          <span className="font-display font-semibold">🔔 Tu pedido ya esta listo para entregar</span>
-          <button onClick={() => setShowReadyBanner(false)} className="text-xl leading-none">
-            &times;
-          </button>
-        </div>
-      )}
-
       <div className="mx-auto max-w-md">
         <p className="font-mono text-xs uppercase tracking-wide text-ember">
           {order.table?.name || `Mesa ${order.table?.number}`}
         </p>
         <h1 className="font-display text-2xl font-semibold">Pedido #{order.number}</h1>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div className="mt-2">
           <StatusBadge status={order.status} />
-          {order.payment?.status === "PAGADO" && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-herb/15 px-3 py-1 text-sm font-medium text-herb-600">
-              Pagado
-            </span>
-          )}
         </div>
-
-        {notifPermission === "default" && (
-          <button onClick={requestNotifications} className="btn-secondary mt-4 w-full text-sm">
-            Avisarme con una notificacion cuando este listo
-          </button>
-        )}
 
         {cancelled ? (
           <p className="mt-6 rounded-lg bg-red-50 p-4 text-red-700">
@@ -175,3 +124,4 @@ export default function OrderStatusPage({ params }) {
     </main>
   );
 }
+
