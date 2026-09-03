@@ -45,6 +45,16 @@ function PedidosContent() {
     load();
   }
 
+  async function markAsPaid(order, method) {
+    if (!confirm(`Confirmas que el pedido #${order.number} fue pagado (${method})?`)) return;
+    await fetch(`/api/orders/${order.id}/payment`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ method }),
+    });
+    load();
+  }
+
   function exportCsv() {
     const headers = ["Numero", "Mesa", "Fecha", "Estado", "Total"];
     const rows = orders.map((o) => [
@@ -111,7 +121,9 @@ function PedidosContent() {
               <th className="py-2 pr-2">Items</th>
               <th className="py-2 pr-2">Total</th>
               <th className="py-2 pr-2">Estado</th>
-              <th className="py-2">Cambiar estado</th>
+              <th className="py-2 pr-2">Cambiar estado</th>
+              <th className="py-2 pr-2">Pago</th>
+              <th className="py-2">Confirmar pago</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-ink/10">
@@ -142,11 +154,40 @@ function PedidosContent() {
                     ))}
                   </select>
                 </td>
+                <td className="py-2 pr-2">
+                  {order.payment?.status === "PAGADO" ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-herb/15 px-3 py-1 text-xs font-medium text-herb-600">
+                      Pagado ({order.payment.method})
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-ink/5 px-3 py-1 text-xs font-medium text-ink/60">
+                      Pendiente
+                    </span>
+                  )}
+                </td>
+                <td className="py-2">
+                  {order.payment?.status !== "PAGADO" && (
+                    <div className="flex gap-1">
+                      <button
+                        className="btn-secondary py-1 text-xs"
+                        onClick={() => markAsPaid(order, "EFECTIVO")}
+                      >
+                        Efectivo
+                      </button>
+                      <button
+                        className="btn-secondary py-1 text-xs"
+                        onClick={() => markAsPaid(order, "EN_ESTABLECIMIENTO")}
+                      >
+                        En caja
+                      </button>
+                    </div>
+                  )}
+                </td>
               </tr>
             ))}
             {orders.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-ink/40">
+                <td colSpan={9} className="py-8 text-center text-ink/40">
                   No hay pedidos con estos filtros.
                 </td>
               </tr>
