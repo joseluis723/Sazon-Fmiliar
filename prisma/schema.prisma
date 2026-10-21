@@ -135,7 +135,7 @@ model OrderStatusHistory {
   status    OrderStatus
   changedBy String?
   user      User?       @relation(fields: [changedBy], references: [id])
-  createdAt DateTime    @default(now()
+  createdAt DateTime    @default(now())
 
 model Payment {
   id        String        @id @default(cuid())
