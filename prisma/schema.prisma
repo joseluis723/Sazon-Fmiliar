@@ -121,6 +121,7 @@ model OrderItem {
   orderId    String
   order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId  String
+
   product    Product @relation(fields: [productId], references: [id])
   quantity   Int
   unitPrice  Float // precio congelado al momento del pedido
@@ -134,7 +135,19 @@ model OrderStatusHistory {
   status    OrderStatus
   changedBy String?
   user      User?       @relation(fields: [changedBy], references: [id])
-  createdAt DateTime    @default(now())
+  createdAt DateTime    @default(now()
+
+model Payment {
+  id        String        @id @default(cuid())
+  orderId   String        @unique
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method    PaymentMethod
+  status    PaymentStatus @default(PENDIENTE)
+  amount    Float
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
 }
 
 
